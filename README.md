@@ -1,0 +1,2 @@
+# KeePass-AutoBackup
+Automatic backup your KeePass file from your local storage to a network drive or any other directory every time you start KeePass. KeePass will load the last recent file from your backup location to ensure that changes from other devices are considered.
