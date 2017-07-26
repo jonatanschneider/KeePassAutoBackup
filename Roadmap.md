@@ -8,11 +8,11 @@ The project is seperated in four versions:
     + opens KeePass with most recent file from backup folder
     + catches exceptions
 - only hardcoded settings
-- write tests
 
 ## V0.2
 - Exception handling
 - do some refactoring to make program more modular
+- write tests
 
 ## V1.0
 - no hardcoded settings
