@@ -34,7 +34,6 @@ public class Main {
      **/
     private static Path remote = Paths.get("Z:\\KeePass\\Windows-Backup\\" + getCurrentYear());
 
-
     public static void main(String[] args) {
         try {
             createFolderIfNotExistent(local);
@@ -61,7 +60,7 @@ public class Main {
      * If the remote server is not reachable, the last local backup will be used
      * @throws IOException When program location can't be accessed
      */
-    static void start() throws IOException {
+    private static void start() throws IOException {
         //see https://stackoverflow.com/a/3774441/8040490
         String command = database.toString();
         if(Files.notExists(database)){
@@ -79,7 +78,7 @@ public class Main {
      *
      * @return current year as int
      */
-    static int getCurrentYear() {
+    private static int getCurrentYear() {
         return Year.now(ZoneId.systemDefault()).getValue();
     }
 
@@ -88,7 +87,7 @@ public class Main {
      *
      * @return current date, formatted as YYYY-MM-DD
      */
-    static String getCurrentDate() {
+    private static String getCurrentDate() {
         return LocalDate.now(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_LOCAL_DATE);
     }
 
@@ -96,7 +95,7 @@ public class Main {
      * Checks existence of backup folders and creates them if not existent
      * @throws IOException if folder location can't be accessed
      */
-    static void createFolderIfNotExistent(Path path) throws IOException {
+    private static void createFolderIfNotExistent(Path path) throws IOException {
         if (Files.notExists(path)) Files.createDirectory(path);
     }
 
@@ -105,7 +104,7 @@ public class Main {
      * @param folder folder with backups
      * @return last modified file of 'folder'
      */
-    static File getLastModified(Path folder) {
+    private static File getLastModified(Path folder) {
         //https://stackoverflow.com/a/286001
         File f = new File(folder.toString());
         File[] files = f.listFiles(File::isFile);
@@ -129,7 +128,7 @@ public class Main {
      * @return true if database got copied
      * @throws IOException if files can't be accessed
      */
-    static boolean createBackup(Path folder) throws IOException {
+    private static boolean createBackup(Path folder) throws IOException {
         if (Files.notExists(Paths.get(folder.toString() + fileName))) {
             //check whether database is newer or not
             long lastModified = (getLastModified(folder) != null ? getLastModified(folder).lastModified() : -1);
