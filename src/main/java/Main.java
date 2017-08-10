@@ -1,5 +1,6 @@
-import java.io.File;
-import java.io.IOException;
+package main.java;
+
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -7,69 +8,80 @@ import java.time.LocalDate;
 import java.time.Year;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Properties;
 
+/**
+ * @author Jonatan Schneider
+ * @version 1.0
+ */
 public class Main {
     /**
-     * KeePass database file extension
+     * KeePass file extension
      **/
-    private static final String extension = ".kdbx";
+    private static final String EXTENSION = ".kdbx";
     /**
      * Name of the backup file
      **/
-    private static final String fileName = File.separator + getCurrentDate() + extension;
+    private static final String FILE_NAME = File.separator + getCurrentDate() + EXTENSION;
     /**
      * KeePass.exe location
      **/
-    private static String program = "D:\\Program Files (x86)\\KeePass Password Safe 2\\KeePass.exe";
+    private static String PROGRAM;
     /**
      * Database location
      **/
-    private static Path database = Paths.get("Z:\\KeePass\\KeePass.kdbx");
+    private static Path DATABASE;
     /**
-     * Folder of local backups
+     * Folder of LOCAL backups
      **/
-    private static Path local = Paths.get("E:\\Backups\\KeePass\\" + getCurrentYear());
+    private static Path LOCAL;
     /**
-     * Folder of remote backups
+     * Folder of REMOTE backups
      **/
-    private static Path remote = Paths.get("Z:\\KeePass\\Windows-Backup\\" + getCurrentYear());
+    private static Path REMOTE;
 
     public static void main(String[] args) {
+        writeProperties(args);
+        readProperties();
         try {
-            createFolderIfNotExistent(local);
-            createFolderIfNotExistent(remote);
+            createFolderIfNotExistent(LOCAL);
+            createFolderIfNotExistent(REMOTE);
         } catch (IOException e) {
             System.out.println("Folders could not be found or created!");
+            writeLog(e.getMessage());
         }
         try {
-            createBackup(local);
-            createBackup(remote);
+            createBackup(LOCAL);
+            createBackup(REMOTE);
         } catch (IOException e) {
             System.out.println("Files could not be copied!");
+            writeLog(e.getMessage());
         }
-
         try {
             start();
         } catch (IOException e) {
             System.out.println("KeePass could not be started!");
+            writeLog(e.getMessage());
         }
     }
 
     /**
      * Start KeePass
-     * If the remote server is not reachable, the last local backup will be used
-     * @throws IOException When program location can't be accessed
+     * If the REMOTE server is not reachable, the last LOCAL backup will be used
+     *
+     * @throws IOException When PROGRAM location can't be accessed
      */
     private static void start() throws IOException {
         //see https://stackoverflow.com/a/3774441/8040490
-        String command = database.toString();
-        if(Files.notExists(database)){
-            if(getLastModified(local) != null){
-                command = getLastModified(local).getPath();
+        String command = DATABASE.toString();
+        if (Files.notExists(DATABASE)) {
+            if (getLastModified(LOCAL) != null) {
+                command = getLastModified(LOCAL).getPath();
             }
             command = ""; //no backup found for this year
         }
-        Process keepass = Runtime.getRuntime().exec(program + " " + command);
+        Process keepass = Runtime.getRuntime().exec(PROGRAM + " " + command);
         keepass.getInputStream();
     }
 
@@ -79,6 +91,7 @@ public class Main {
      * @return current year as int
      */
     private static int getCurrentYear() {
+
         return Year.now(ZoneId.systemDefault()).getValue();
     }
 
@@ -92,7 +105,8 @@ public class Main {
     }
 
     /**
-     * Checks existence of backup folders and creates them if not existent
+     * Checks existence of folder and creates it if not existent
+     *
      * @throws IOException if folder location can't be accessed
      */
     private static void createFolderIfNotExistent(Path path) throws IOException {
@@ -101,6 +115,7 @@ public class Main {
 
     /**
      * Get last modified file of a folder
+     *
      * @param folder folder with backups
      * @return last modified file of 'folder'
      */
@@ -123,20 +138,98 @@ public class Main {
     }
 
     /**
-     * Copy the database to 'folder' if it's not a duplicate
+     * Copy the DATABASE to 'folder' if it's not a duplicate
+     *
      * @param folder backup folder
-     * @return true if database got copied
+     * @return true if DATABASE got copied
      * @throws IOException if files can't be accessed
      */
     private static boolean createBackup(Path folder) throws IOException {
-        if (Files.notExists(Paths.get(folder.toString() + fileName))) {
-            //check whether database is newer or not
+        if (Files.notExists(Paths.get(folder.toString() + FILE_NAME))) {
+            //check whether DATABASE is newer or not
             long lastModified = (getLastModified(folder) != null ? getLastModified(folder).lastModified() : -1);
-            if (lastModified < new File(database.toString()).lastModified()) {
-                Files.copy(database, Paths.get(folder.toString() + fileName));
+            if (lastModified < new File(DATABASE.toString()).lastModified()) {
+                Files.copy(DATABASE, Paths.get(folder.toString() + FILE_NAME));
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Read paths from properties file and set variables
+     */
+    private static void readProperties() {
+        File config = new File("config.properties");
+        try (FileReader reader = new FileReader(config)) {
+            Properties p = new Properties();
+            p.load(reader);
+            PROGRAM = p.getProperty("PROGRAM");
+            DATABASE = Paths.get(p.getProperty("DATABASE"));
+            LOCAL = Paths.get(p.getProperty("LOCAL_BACKUP") + getCurrentYear());
+            REMOTE = Paths.get(p.getProperty("REMOTE_BACKUP") + getCurrentYear());
+        } catch (java.io.FileNotFoundException e) {
+            writeLog(e.getMessage());
+        } catch (IOException e) {
+            writeLog(e.getMessage());
+        }
+    }
+
+    /**
+     * Write paths to properties file
+     * @param args command line arguments to be written to file
+     */
+    private static void writeProperties(String[] args) {
+        Properties prop = new Properties();
+        //write current properties
+        if (Files.exists(Paths.get("config.properties"))) {
+            try (FileReader fr = new FileReader("config.properties")) {
+                prop.load(fr);
+            } catch (IOException e) {
+                writeLog(e.getMessage());
+            }
+        }
+        //overwrite properties if arguments are passed
+        String clArgs = parseArguments(args);
+        if (!clArgs.isEmpty()) {
+            try {
+                prop.load(new StringReader(clArgs));
+            } catch (IOException e) {
+                writeLog(e.getMessage());
+            }
+        }
+        //wrtie to properties file
+        try (FileWriter fw = new FileWriter("config.properties")) {
+            prop.store(fw, "see readme for information how to change paths");
+        } catch (IOException e) {
+            writeLog(e.getMessage());
+        }
+    }
+
+    /**
+     * Parse command line arguments to replace "\" with "\\" and add a line break after each argument
+     * @param args command line arguments
+     * @return parsed string
+     */
+    private static String parseArguments(String[] args) {
+        StringBuilder sb = new StringBuilder();
+        Arrays.stream(args)
+                .map(arg -> arg.replace("\\", "\\\\"))
+                .forEach(arg -> sb.append(arg).append("\n"));
+        return sb.toString();
+    }
+
+    /**
+     * Writes error messages to logfile
+     * @param message error message
+     */
+    private static void writeLog(String message) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter("error.log"))) {
+            bw.write(message);
+            bw.newLine();
+        } catch (IOException e) {
+            System.out.println("Error in creating logfile");
+            System.out.println(e.getMessage());
+        }
     }
 }
