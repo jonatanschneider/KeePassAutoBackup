@@ -166,8 +166,8 @@ public class Main {
             p.load(reader);
             PROGRAM = p.getProperty("PROGRAM");
             DATABASE = Paths.get(p.getProperty("DATABASE"));
-            LOCAL = Paths.get(p.getProperty("LOCAL_BACKUP") + getCurrentYear());
-            REMOTE = Paths.get(p.getProperty("REMOTE_BACKUP") + getCurrentYear());
+            LOCAL = Paths.get(p.getProperty("LOCAL_BACKUP") + "\\" + getCurrentYear());
+            REMOTE = Paths.get(p.getProperty("REMOTE_BACKUP") + "\\" + getCurrentYear());
         } catch (java.io.FileNotFoundException e) {
             writeLog(e.getMessage());
         } catch (IOException e) {
