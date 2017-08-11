@@ -3,6 +3,9 @@ Automatic backup your KeePass file from your local storage to a network drive or
 
 Main database gets copied to local and remote folder and KeePass will open the main database. If this database file can't be accessed KeePass will open the most recent local backup.
 
+# Download
+See [Releases of KeePassAutoBackup](https://github.com/jonatanschneider/KeePassAutoBackup/releases)
+
 ## Adjust Paths
 You can either adjust the paths with command line arguments or through editing the `config.properties` file.
 
